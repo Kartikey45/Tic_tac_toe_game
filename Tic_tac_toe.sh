@@ -2,7 +2,7 @@
 
 echo " ****************************** WELCOME TO TIC TAC TOE GAME ****************************** "
 
-#CONSTANT
+#CONSTANTS
 ROWS=3
 COLUMNS=3
 SIGN=0
@@ -77,9 +77,10 @@ function displayBoard()
 function getWinner()
 {
 	local player=$1
-	column=0
 	flag=false
 
+	#CHECK ROW WISE
+	column=0
 	for((row=0; row<$ROWS; row++))
 	do
 		if [[ ${board[$row,$column]}${board[$row,$(($column+1))]}${board[$row,$(($column+2))]} == $player$player$player ]]
@@ -89,6 +90,7 @@ function getWinner()
 		fi
 	done
 
+	#CHECK COLUMN WISE
 	row=0
 	for((column=0; column<$COLUMNS; column++))
 	do
@@ -99,6 +101,7 @@ function getWinner()
 		fi
 	done
 
+	#CHECK DIAGONAL WISE
 	row=0
 	column=0
 	if [[ ${board[$row,$column]}${board[$(($row+1)),$(($column+1))]}${board[$(($row+2)),$(($column+2))]} == $player$player$player ]]
@@ -113,6 +116,95 @@ function getWinner()
 	echo $flag
 }
 
+
+#FUNCTION TO CHECK WINNING MOVE FOR COMPUTER
+function checkComputerWinMove()
+{
+	local playerCheck=$1
+
+	#CHECK ROW WISE
+	column=0
+	for((row=0; row<$ROWS; row++))
+	do
+		if [[ ${board[$row,$column]}${board[$row,$(($column+1))]} == $playerCheck$playerCheck && ${board[$row,$(($column+2))]} == $IS_EMPTY ]]
+		then
+			board[$row,$(($column+2))]=$computer
+			turnPlayed=1
+			return
+		elif [[ ${board[$row,$column]}${board[$row,$(($column+2))]} == $playerCheck$playerCheck && ${board[$row,$(($column+1))]} == $IS_EMPTY ]]
+		then
+			board[$row,$(($column+1))]=$computer
+			turnPlayed=1
+			return
+		elif [[ ${board[$row,$(($column+1))]}${board[$row,$(($column+2))]} == $playerCheck$playerCheck && ${board[$row,$column]} == $IS_EMPTY ]]
+		then
+			board[$row,$column]=$computer
+			turnPlayed=1
+			return
+		fi
+	done
+
+	#CHECK COLUMN WISE
+	row=0
+	for((column=0; column<$COLUMNS; column++))
+	do
+		if [[ ${board[$row,$column]}${board[$(($row+1)),$column]} == $playerCheck$playerCheck && ${board[$(($row+2)),$column]} == $IS_EMPTY ]]
+		then
+			board[$(($row+2)),$column]=$computer
+			turnPlayed=1
+			return
+		elif [[ ${board[$row,$column]}${board[$(($row+2)),$column]} == $playerCheck$playerCheck && ${board[$(($row+1)),$column]} == $IS_EMPTY ]]
+		then
+			board[$(($row+1)),$column]=$computer
+			turnPlayed=1
+			return
+		elif [[ ${board[$(($row+1)),$column]}${board[$(($row+2)),$column]} == $playerCheck$playerCheck && ${board[$row,$column]} == $IS_EMPTY ]]
+		then
+			board[$row,$column]=$computer
+			turnPlayed=1
+			return
+		fi
+	done
+
+	#CHECK DIAGONAL AT POSITION ([0,0] [1,1] [2,2]) WISE
+	row=0
+	column=0
+	if [[ ${board[$row,$column]}${board[$(($row+1)),$(($column+1))]} == $playerCheck$playerCheck && ${board[$(($row+2)),$(($column+2))]} == $IS_EMPTY ]]
+	then
+		board[$(($row+2)),$(($column+2))]=$computer
+		turnPlayed=1
+		return
+	elif [[ ${board[$row,$column]}${board[$(($row+2)),$(($column+2))]} == $playerCheck$playerCheck && ${board[$(($row+1)),$(($column+1))]} == $IS_EMPTY ]]
+	then
+		board[$(($row+1)),$(($column+1))]=$computer
+		turnPlayed=1
+		return
+	elif [[ ${board[$(($row+1)),$(($column+1))]}${board[$(($row+2)),$(($column+2))]} == $playerCheck$playerCheck && ${board[$row,$column]} == $IS_EMPTY ]]
+	then
+		board[$row,$column]=$computer
+		turnPlayed=1
+		return
+	fi
+
+	#CHECK DIAGONAL AT POSITION ([0,2] [1,1] [2,0]) WISE
+	if [[ ${board[$row,$(($column+2))]}${board[$(($row+1)),$(($column+1))]} == $playerCheck$playerCheck && ${board[$(($row+2)),$column]} == $IS_EMPTY ]]
+	then
+		board[$(($row+2)),$column]=$computer
+		turnPlayed=1
+		return
+	elif [[ ${board[$row,$(($column+2))]}${board[$(($row+2)),$column]} == $playerCheck$playerCheck && ${board[$(($row+1)),$(($column+1))]} == $IS_EMPTY ]]
+	then
+		board[$(($row+1)),$(($column+1))]=$computer
+		turnPlayed=1
+		return
+	elif [[ ${board[$(($row+1)),$(($column+1))]}${board[$(($row+2)),$column]} == $playerCheck$playerCheck && ${board[$row,$(($column+2))]} == $IS_EMPTY ]]
+	then
+		board[$row,$(($column+2))]=$computer
+		turnPlayed=1
+		return
+	fi
+}
+
 #FUNCTION FOR PLAYER TURN
 function playerTurn()
 {
@@ -120,14 +212,14 @@ function playerTurn()
 	do
 		if [[ $flagSet == false ]]
 		then
-			echo "Player $player Turn: "
+			echo "$player Turn: "
 			((playerTurnCount++))
 			read -p "Enter number of row cell: " rowCell
 			read -p "Enter number of column cell: " columnCell
 
 			while [[ ${board[$rowCell,$columnCell]} != $IS_EMPTY ]]
 			do
-				echo "Cell is already occupied enter another cell value."
+				echo "Cell1 is occupied enter another value."
 				read -p "Enter number of row cell: " rowCell
 				read -p "Enter number of column cell: " columnCell
 			done
@@ -141,24 +233,29 @@ function playerTurn()
 				return
 			fi
 			flagSet=true
-		else
-			echo "Computer $computer Turn: "
+			else
+			turnPlayed=0
+			echo "$computer Turn: "
 			((playerTurnCount++))
-			rowCell=$(( RANDOM % 3 ))
-			columnCell=$(( RANDOM % 3 ))
-
-			while [[ ${board[$rowCell,$columnCell]} != $IS_EMPTY ]]
-			do
+			checkComputerWinMove $computer
+			if [ $turnPlayed -eq 0 ]
+			then
 				rowCell=$(( RANDOM % 3 ))
 				columnCell=$(( RANDOM % 3 ))
-			done
 
-			board[$rowCell,$columnCell]=$computer
+				while [[ ${board[$rowCell,$columnCell]} != $IS_EMPTY ]]
+				do
+					rowCell=$(( RANDOM % 3 ))
+					columnCell=$(( RANDOM % 3 ))
+				done
+				board[$rowCell,$columnCell]=$computer
+			fi
+
 			displayBoard
 			getWinner $computer
 			if [[ $flag == true ]]
 			then
-				printf "Computer $computer wins the game."
+				printf "Computer wins the game."
 				return
 			fi
 			flagSet=false
@@ -179,4 +276,3 @@ else
 	displayBoard
 	playerTurn
 fi
-
